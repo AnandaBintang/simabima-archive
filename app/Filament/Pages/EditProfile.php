@@ -8,9 +8,14 @@ use Filament\Forms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class EditProfile extends BaseEditProfile
 {
+    public $profilePhotoUpload;
+
     /**
      * Use the full panel layout (with sidebar + topbar).
      */
@@ -26,6 +31,14 @@ class EditProfile extends BaseEditProfile
     {
         return $schema
             ->schema([
+                Section::make('Foto Profil')
+                    ->schema([
+                        Forms\Components\ViewField::make('profile_photo_section')
+                            ->view('filament.forms.components.avatar-upload')
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
+                    ]),
+
                 Section::make('Informasi Akun')
                     ->columns(2)
                     ->schema([
@@ -98,5 +111,44 @@ class EditProfile extends BaseEditProfile
                             ->nullable(),
                     ]),
             ]);
+    }
+
+    public function saveProfilePhoto(): void
+    {
+        if (! $this->profilePhotoUpload) {
+            return;
+        }
+
+        /** @var TemporaryUploadedFile $file */
+        $file = $this->profilePhotoUpload;
+        $user = $this->getUser();
+
+        // Delete old photo
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
+        $path = $file->storeAs(
+            'profile-photos',
+            Str::ulid() . '.' . $file->getClientOriginalExtension(),
+            'public'
+        );
+
+        $user->update(['profile_photo_path' => $path]);
+        $this->profilePhotoUpload = null;
+
+        $this->redirect(static::getUrl());
+    }
+
+    public function deleteProfilePhoto(): void
+    {
+        $user = $this->getUser();
+
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+            $user->update(['profile_photo_path' => null]);
+        }
+
+        $this->redirect(static::getUrl());
     }
 }

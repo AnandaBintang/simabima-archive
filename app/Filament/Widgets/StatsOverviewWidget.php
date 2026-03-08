@@ -8,7 +8,7 @@ use App\Models\Archive;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class StatsOverviewWidget extends BaseWidget
 {
@@ -17,10 +17,23 @@ class StatsOverviewWidget extends BaseWidget
     // Disable default 5s polling — stats don't need real-time refresh
     protected ?string $pollingInterval = null;
 
+    private function scopedArchiveQuery()
+    {
+        $query = Archive::query();
+        $user = Auth::user();
+        if ($user && $user->isStaff()) {
+            $unitIds = $user->getAccessibleUnitIds();
+            if ($unitIds !== null) {
+                $query->whereIn('organization_unit_id', $unitIds);
+            }
+        }
+        return $query;
+    }
+
     protected function getStats(): array
     {
         // Aggregate totals in a single query
-        $agg = Archive::selectRaw(
+        $agg = $this->scopedArchiveQuery()->selectRaw(
             'COUNT(*) as total,
              SUM(download_count) as total_downloads,
              SUM(CASE WHEN YEAR(created_at)=? AND MONTH(created_at)=? THEN 1 ELSE 0 END) as this_month',
@@ -34,7 +47,8 @@ class StatsOverviewWidget extends BaseWidget
 
         // Trend: last 6 months — ONE query replacing 6 loop queries
         $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
-        $rawTrend = Archive::selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mo, COUNT(*) as cnt')
+        $rawTrend = $this->scopedArchiveQuery()
+            ->selectRaw('YEAR(created_at) as yr, MONTH(created_at) as mo, COUNT(*) as cnt')
             ->where('created_at', '>=', $sixMonthsAgo)
             ->groupBy('yr', 'mo')
             ->get()

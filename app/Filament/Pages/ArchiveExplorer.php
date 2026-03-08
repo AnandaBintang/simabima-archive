@@ -3,13 +3,12 @@
 namespace App\Filament\Pages;
 
 use App\Models\OrganizationUnit;
-use BackedEnum;
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Page;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
-use UnitEnum;
 
 class ArchiveExplorer extends Page
 {
@@ -78,13 +77,41 @@ class ArchiveExplorer extends Page
             return null;
         }
 
-        return OrganizationUnit::with([
+        $group = OrganizationUnit::with([
             'children' => fn ($q) => $q
                 ->withCount('archives')
                 ->with([
                     'children' => fn ($q2) => $q2->withCount('archives'),
                 ]),
         ])->find($this->activeGroupId);
+
+        if (! $group) {
+            return null;
+        }
+
+        // UPT staff: filter children to only show their own UPT branch
+        $user = Auth::user();
+        if ($user && $user->isStaff() && $user->organization_unit_id) {
+            // Check if this group is the "UPT" group
+            if (strtolower($group->name) === 'upt') {
+                // Find which direct child of this group the user belongs to
+                $userUnit = $user->organizationUnit;
+                $uptBranch = $userUnit;
+                while ($uptBranch && $uptBranch->parent_id && $uptBranch->parent_id !== $group->id) {
+                    $uptBranch = $uptBranch->parent;
+                }
+
+                if ($uptBranch && $uptBranch->parent_id === $group->id) {
+                    // Filter children to only the user's UPT branch
+                    $group->setRelation(
+                        'children',
+                        $group->children->filter(fn ($child) => $child->id === $uptBranch->id)->values()
+                    );
+                }
+            }
+        }
+
+        return $group;
     }
 
     #[Computed]

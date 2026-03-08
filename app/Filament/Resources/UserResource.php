@@ -36,6 +36,15 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
+                Section::make('Foto Profil')
+                    ->schema([
+                        Forms\Components\ViewField::make('profile_photo_section')
+                            ->view('filament.forms.components.avatar-upload')
+                            ->dehydrated(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn (string $operation): bool => $operation === 'edit'),
+
                 Section::make('Informasi Akun')
                     ->schema([
                         Forms\Components\TextInput::make('name')
@@ -94,6 +103,13 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('profile_photo_path')
+                    ->label('Foto')
+                    ->circular()
+                    ->disk('public')
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name) . '&background=2A3890&color=fff')
+                    ->width(40)
+                    ->height(40),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nama')
                     ->searchable()

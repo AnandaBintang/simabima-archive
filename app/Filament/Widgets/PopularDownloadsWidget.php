@@ -7,6 +7,7 @@ use App\Models\Archive;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Support\Facades\Auth;
 
 class PopularDownloadsWidget extends BaseWidget
 {
@@ -22,14 +23,22 @@ class PopularDownloadsWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $query = Archive::query()
+            ->with(['organizationUnit.parent.parent', 'category'])
+            ->where('download_count', '>', 0)
+            ->orderByDesc('download_count')
+            ->limit(10);
+
+        $user = Auth::user();
+        if ($user && $user->isStaff()) {
+            $unitIds = $user->getAccessibleUnitIds();
+            if ($unitIds !== null) {
+                $query->whereIn('organization_unit_id', $unitIds);
+            }
+        }
+
         return $table
-            ->query(
-                Archive::query()
-                    ->with(['organizationUnit.parent.parent', 'category'])
-                    ->where('download_count', '>', 0)
-                    ->orderByDesc('download_count')
-                    ->limit(10)
-            )
+            ->query($query)
             ->columns([
                 Tables\Columns\TextColumn::make('rank')
                     ->label('#')

@@ -31,6 +31,7 @@ class User extends Authenticatable implements FilamentUser
         'jabatan',
         'unit_kerja',
         'phone',
+        'profile_photo_path',
     ];
 
     /**
@@ -75,6 +76,72 @@ class User extends Authenticatable implements FilamentUser
     public function organizationUnit(): BelongsTo
     {
         return $this->belongsTo(OrganizationUnit::class);
+    }
+
+    /**
+     * Get all organization unit IDs that this user should have access to.
+     * Staff in UPT: all Sekretariat + Bidang units + their own UPT branch only.
+     * Staff in Sekretariat/Bidang: no restriction (sees everything).
+     * Admin: null (no restriction).
+     */
+    public function getAccessibleUnitIds(): ?array
+    {
+        if ($this->isAdmin()) {
+            return null;
+        }
+
+        if (! $this->organization_unit_id) {
+            return [];
+        }
+
+        // Walk up to find the top-level group
+        $unit = $this->organizationUnit;
+        if (! $unit) {
+            return [];
+        }
+
+        $group = $unit;
+        while ($group->parent_id) {
+            $group = $group->parent;
+        }
+
+        // If staff is NOT under "UPT" group, they can see everything
+        if ($group->type !== 'group' || strtolower($group->name) !== 'upt') {
+            return null;
+        }
+
+        // UPT staff: collect all non-UPT groups (Sekretariat, Bidang) + own UPT branch
+        $ids = [];
+
+        // Add all units from non-UPT groups (Sekretariat, Bidang, etc.)
+        $otherGroups = OrganizationUnit::groups()
+            ->where('id', '!=', $group->id)
+            ->with('children.children')
+            ->get();
+
+        foreach ($otherGroups as $otherGroup) {
+            $ids = array_merge($ids, $this->collectDescendantIds($otherGroup));
+        }
+
+        // Add own UPT branch: find the direct child of UPT group that this user belongs to
+        $uptBranch = $unit;
+        while ($uptBranch->parent_id && $uptBranch->parent_id !== $group->id) {
+            $uptBranch = $uptBranch->parent;
+        }
+        // Load children for the UPT branch
+        $uptBranch->load('children.children');
+        $ids = array_merge($ids, $this->collectDescendantIds($uptBranch));
+
+        return $ids;
+    }
+
+    private function collectDescendantIds(OrganizationUnit $unit): array
+    {
+        $ids = [$unit->id];
+        foreach ($unit->children as $child) {
+            $ids = array_merge($ids, $this->collectDescendantIds($child));
+        }
+        return $ids;
     }
 
     public function archives(): HasMany

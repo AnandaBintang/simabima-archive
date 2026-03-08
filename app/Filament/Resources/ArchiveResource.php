@@ -13,6 +13,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use UnitEnum;
@@ -32,6 +33,21 @@ class ArchiveResource extends Resource
     protected static ?string $pluralModelLabel = 'Arsip';
 
     protected static ?int $navigationSort = 1;
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $user = Auth::user();
+        if ($user && $user->isStaff()) {
+            $unitIds = $user->getAccessibleUnitIds();
+            if ($unitIds !== null) {
+                $query->whereIn('organization_unit_id', $unitIds);
+            }
+        }
+
+        return $query;
+    }
 
     public static function form(Schema $form): Schema
     {

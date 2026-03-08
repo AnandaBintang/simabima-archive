@@ -6,6 +6,7 @@ use App\Models\Archive;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Support\Facades\Auth;
 
 class LatestArchivesWidget extends BaseWidget
 {
@@ -20,13 +21,21 @@ class LatestArchivesWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
+        $query = Archive::query()
+            ->with(['organizationUnit.parent.parent', 'category', 'user'])
+            ->latest()
+            ->limit(5);
+
+        $user = Auth::user();
+        if ($user && $user->isStaff()) {
+            $unitIds = $user->getAccessibleUnitIds();
+            if ($unitIds !== null) {
+                $query->whereIn('organization_unit_id', $unitIds);
+            }
+        }
+
         return $table
-            ->query(
-                Archive::query()
-                    ->with(['organizationUnit.parent.parent', 'category', 'user'])
-                    ->latest()
-                    ->limit(5)
-            )
+            ->query($query)
             ->columns([
                 Tables\Columns\TextColumn::make('document_name')
                     ->label('Nama Dokumen')
