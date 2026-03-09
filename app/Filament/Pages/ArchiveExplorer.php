@@ -29,6 +29,20 @@ class ArchiveExplorer extends Page
 
     public function mount(): void
     {
+        // UPT staff: force default to UPT group and block access to other groups
+        $user = Auth::user();
+        if ($user && $user->isStaff() && $user->organization_unit_id) {
+            $userUnit = $user->organizationUnit;
+            $topGroup = $userUnit;
+            while ($topGroup && $topGroup->parent_id) {
+                $topGroup = $topGroup->parent;
+            }
+            if ($topGroup && strtolower($topGroup->name) === 'upt') {
+                $this->activeGroupId = $topGroup->id;
+                return;
+            }
+        }
+
         // If no group in URL, default to first group
         if (! $this->activeGroupId) {
             $this->activeGroupId = OrganizationUnit::groups()->value('id');
@@ -51,6 +65,19 @@ class ArchiveExplorer extends Page
     public static function getNavigationItems(): array
     {
         $groups = Cache::remember('org_unit_groups_nav', 3600, fn () => OrganizationUnit::groups()->get());
+
+        // UPT staff: only show the UPT group in navigation
+        $user = Auth::user();
+        if ($user && $user->isStaff() && $user->organization_unit_id) {
+            $userUnit = $user->organizationUnit;
+            $topGroup = $userUnit;
+            while ($topGroup && $topGroup->parent_id) {
+                $topGroup = $topGroup->parent;
+            }
+            if ($topGroup && strtolower($topGroup->name) === 'upt') {
+                $groups = $groups->filter(fn ($g) => $g->id === $topGroup->id);
+            }
+        }
 
         return $groups
             ->map(fn (OrganizationUnit $group) =>

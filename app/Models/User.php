@@ -80,7 +80,7 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Get all organization unit IDs that this user should have access to.
-     * Staff in UPT: all Sekretariat + Bidang units + their own UPT branch only.
+     * Staff in UPT: only their own UPT branch.
      * Staff in Sekretariat/Bidang: no restriction (sees everything).
      * Admin: null (no restriction).
      */
@@ -110,29 +110,14 @@ class User extends Authenticatable implements FilamentUser
             return null;
         }
 
-        // UPT staff: collect all non-UPT groups (Sekretariat, Bidang) + own UPT branch
-        $ids = [];
-
-        // Add all units from non-UPT groups (Sekretariat, Bidang, etc.)
-        $otherGroups = OrganizationUnit::groups()
-            ->where('id', '!=', $group->id)
-            ->with('children.children')
-            ->get();
-
-        foreach ($otherGroups as $otherGroup) {
-            $ids = array_merge($ids, $this->collectDescendantIds($otherGroup));
-        }
-
-        // Add own UPT branch: find the direct child of UPT group that this user belongs to
+        // UPT staff: only their own UPT branch
         $uptBranch = $unit;
         while ($uptBranch->parent_id && $uptBranch->parent_id !== $group->id) {
             $uptBranch = $uptBranch->parent;
         }
-        // Load children for the UPT branch
         $uptBranch->load('children.children');
-        $ids = array_merge($ids, $this->collectDescendantIds($uptBranch));
 
-        return $ids;
+        return $this->collectDescendantIds($uptBranch);
     }
 
     private function collectDescendantIds(OrganizationUnit $unit): array
