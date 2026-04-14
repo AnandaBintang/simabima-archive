@@ -32,6 +32,8 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->profile(EditProfile::class, isSimple: false)
             ->brandName('SIMABIMA')
+            ->brandLogo(asset('img/logo.png'))
+            ->brandLogoHeight('2rem')
             ->colors([
                 'primary' => Color::hex('#CDAB2F'),
                 'gray'    => Color::Slate,
@@ -94,7 +96,6 @@ class AdminPanelProvider extends PanelProvider
                     .fi-breadcrumbs a, .fi-breadcrumbs span {
                         color: rgba(0,0,0,.6) !important;
                     }
-                </style>
                 </style>
                 CSS
             )

@@ -36,11 +36,12 @@
                 display: flex; align-items: center; gap: .65rem; text-decoration: none;
             }
             .lp-nav-logo {
-                width: 2.1rem; height: 2.1rem; border-radius: .5rem;
-                background: linear-gradient(135deg, #2A3890, #1e2a6e);
+                width: 2.1rem; height: 2.1rem;
                 display: flex; align-items: center; justify-content: center; flex-shrink: 0;
             }
-            .lp-nav-logo svg { width: 1.15rem; height: 1.15rem; color: #CDAB2F; }
+            .lp-logo-img {
+                width: 100%; height: 100%; object-fit: contain; display: block;
+            }
             .lp-nav-name {
                 font-family: 'Plus Jakarta Sans', 'Instrument Sans', sans-serif;
                 font-weight: 800; font-size: 1.15rem; letter-spacing: .04em; color: #1e2a6e;
@@ -281,7 +282,9 @@
             /* ─── CTA banner ──────────────────────────────── */
             .lp-cta {
                 padding: 5rem 2rem;
-                background: linear-gradient(135deg, #1e2a6e 0%, #2A3890 60%, #3d50b7 100%);
+                background:
+                    linear-gradient(135deg, rgba(30,42,110,.92) 0%, rgba(42,56,144,.9) 60%, rgba(61,80,183,.86) 100%),
+                    url('{{ asset('img/bg.jpeg') }}') center / cover no-repeat;
                 position: relative; overflow: hidden; text-align: center;
             }
             .lp-cta::after {
@@ -291,6 +294,23 @@
                 pointer-events: none;
             }
             .lp-cta-inner { position: relative; z-index: 1; max-width: 44rem; margin: 0 auto; }
+            .lp-cta-brand {
+                display: inline-flex; align-items: center; gap: .65rem;
+                margin-bottom: 1.1rem;
+                padding: .4rem .9rem;
+                border-radius: 9999px;
+                background: rgba(255,255,255,.12);
+                border: 1px solid rgba(255,255,255,.2);
+            }
+            .lp-cta-brand-logo {
+                width: 1.55rem; height: 1.55rem;
+            }
+            .lp-cta-brand-name {
+                font-size: .8rem;
+                font-weight: 700;
+                letter-spacing: .08em;
+                color: rgba(255,255,255,.9);
+            }
             .lp-cta-title {
                 font-family: 'Plus Jakarta Sans', sans-serif;
                 font-weight: 800; font-size: clamp(1.6rem, 3vw, 2.2rem); color: #fff;
@@ -312,6 +332,17 @@
                 background: #1e2a6e; color: rgba(255,255,255,.5);
                 padding: 1.5rem 2rem; text-align: center; font-size: .8rem;
             }
+            .lp-footer-brand {
+                display: inline-flex;
+                align-items: center;
+                gap: .55rem;
+                margin-right: .35rem;
+                vertical-align: middle;
+            }
+            .lp-footer-logo {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
             .lp-footer strong { color: rgba(255,255,255,.85); }
         </style>
     </head>
@@ -321,10 +352,7 @@
         <nav class="lp-nav">
             <a href="#" class="lp-nav-brand">
                 <span class="lp-nav-logo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 3H19a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/>
-                        <polyline points="9 11 12 14 22 4"/>
-                    </svg>
+                    <img src="{{ asset('img/logo.png') }}" alt="Logo SIMABIMA" class="lp-logo-img">
                 </span>
                 <span class="lp-nav-name">SIMABIMA</span>
             </a>
@@ -544,22 +572,24 @@
         {{-- ── CTA BANNER ───────────────────────────────────────── --}}
         <section class="lp-cta">
             <div class="lp-cta-inner">
+                <div class="lp-cta-brand">
+                    <img src="{{ asset('img/logo.png') }}" alt="Logo SIMABIMA" class="lp-logo-img lp-cta-brand-logo">
+                    <span class="lp-cta-brand-name">SIMABIMA</span>
+                </div>
                 <h2 class="lp-cta-title">Siap Memulai?</h2>
                 <p class="lp-cta-desc">
                     Masuk ke sistem SIMABIMA dan mulai kelola arsip organisasi Anda dengan lebih terstruktur dan efisien.
                 </p>
-                @guest
-                    <a href="{{ url('/admin/login') }}" class="btn-cta">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                        Masuk ke SIMABIMA
-                    </a>
-                @endguest
             </div>
         </section>
 
         {{-- ── FOOTER ───────────────────────────────────────────── --}}
         <footer class="lp-footer">
-            &copy; {{ date('Y') }} <strong>SIMABIMA</strong> — Sistem Manajemen Arsip Digital. All rights reserved.
+            <span class="lp-footer-brand">
+                <img src="{{ asset('img/logo.png') }}" alt="Logo SIMABIMA" class="lp-logo-img lp-footer-logo">
+                <strong>SIMABIMA</strong>
+            </span>
+            &copy; {{ date('Y') }} — Sistem Manajemen Arsip Digital. All rights reserved.
         </footer>
 
     </body>
